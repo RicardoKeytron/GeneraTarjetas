@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Números de Tarjeta de Crédito Válidos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .validation {
+            padding: 20px;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .validation h3 {
+            margin-top: 0;
+        }
+        .step {
+            margin-bottom: 15px;
+        }
+        .copy-btn {
+            background-color: #2196F3;
+            margin-left: 5px;
+        }
+        .copy-btn:hover {
+            background-color: #0b7dda;
+        }
+        .export-btn {
+            background-color: #ff9800;
+        }
+        .export-btn:hover {
+            background-color: #e68a00;
+        }
+    </style>
+</head>
+<body>
+    <h1>Generador de Números de Tarjeta de Crédito Válidos</h1>
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label for="cardType">Tipo de Tarjeta:</label>
+                <select id="cardType">
+                    <option value="visa">VISA (4...)</option>
+                    <option value="mastercard">MasterCard (51-55...)</option>
+                    <option value="amex">American Express (34, 37...)</option>
+                    <option value="discover">Discover (6011, 644-649...)</option>
+                    <option value="random">Aleatorio</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label for="quantity">Cantidad:</label>
+                <input type="number" id="quantity" min="1" max="100" value="10">
+            </div>
+        </div>
+        
+        <button id="generateBtn">Generar Números</button>
+        <button id="exportBtn" class="export-btn">Exportar CSV</button>
+        
+        <div class="results">
+            <h2>Resultados:</h2>
+            <table id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>Número de Tarjeta</th>
+                        <th>Tipo</th>
+                        <th>Válido</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                    <!-- Los resultados se insertarán aquí -->
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="validation">
+            <h3>Algoritmo de Validación (Luhn)</h3>
+            <div class="step">
+                <strong>Paso 1:</strong> Duplicar el valor de cada segundo dígito (de derecha a izquierda).
+            </div>
+            <div class="step">
+                <strong>Paso 2:</strong> Si el resultado de la duplicación es mayor que 9, sumar los dígitos del resultado.
+            </div>
+            <div class="step">
+                <strong>Paso 3:</strong> Sumar todos los dígitos.
+            </div>
+            <div class="step">
+                <strong>Paso 4:</strong> Si el total termina en cero, el número es válido.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Función para aplicar el algoritmo de Luhn y validar el número
+        function isValidLuhn(number) {
+            let sum = 0;
+            let alternate = false;
+            
+            // Convertir a string y eliminar espacios
+            const numStr = number.toString().replace(/\s/g, '');
+            
+            for (let i = numStr.length - 1; i >= 0; i--) {
+                let digit = parseInt(numStr.charAt(i), 10);
+                
+                if (alternate) {
+                    digit *= 2;
+                    if (digit > 9) {
+                        digit = (digit % 10) + 1;
+                    }
+                }
+                
+                sum += digit;
+                alternate = !alternate;
+            }
+            
+            return (sum % 10 === 0);
+        }
+        
+        // Función para generar un número aleatorio de longitud específica
+        function generateRandomDigits(length) {
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += Math.floor(Math.random() * 10);
+            }
+            return result;
+        }
+        
+        // Función para generar un número de tarjeta válido
+        function generateValidCardNumber(type) {
+            let prefix = '';
+            let length = 16;
+            
+            // Establecer prefijo y longitud según el tipo de tarjeta
+            switch(type) {
+                case 'visa':
+                    prefix = '4';
+                    length = 16; // Siempre 16 dígitos para simplificar
+                    break;
+                case 'mastercard':
+                    prefix = (Math.floor(Math.random() * 5) + 51).toString();
+                    length = 16;
+                    break;
+                case 'amex':
+                    prefix = Math.random() > 0.5 ? '34' : '37';
+                    length = 15;
+                    break;
+                case 'discover':
+                    if (Math.random() > 0.5) {
+                        prefix = '6011';
+                    } else {
+                        prefix = (Math.floor(Math.random() * 6) + 644).toString();
+                    }
+                    length = 16;
+                    break;
+                case 'random':
+                    const types = ['visa', 'mastercard', 'amex', 'discover'];
+                    return generateValidCardNumber(types[Math.floor(Math.random() * types.length)]);
+                default:
+                    prefix = '4'; // Default to VISA
+                    length = 16;
+            }
+            
+            // Generar el número sin el dígito de verificación
+            const body = generateRandomDigits(length - prefix.length - 1);
+            let cardNumber = prefix + body;
+            
+            // Calcular el dígito de verificación
+            let sum = 0;
+            let alternate = false;
+            
+            for (let i = cardNumber.length - 1; i >= 0; i--) {
+                let digit = parseInt(cardNumber.charAt(i), 10);
+                
+                if (alternate) {
+                    digit *= 2;
+                    if (digit > 9) {
+                        digit = (digit % 10) + 1;
+                    }
+                }
+                
+                sum += digit;
+                alternate = !alternate;
+            }
+            
+            const checkDigit = (10 - (sum % 10)) % 10;
+            cardNumber += checkDigit;
+            
+            // Verificar que el número tiene la longitud correcta
+            if (cardNumber.length !== length) {
+                console.error("Error: Longitud incorrecta", cardNumber, length);
+                return generateValidCardNumber(type);
+            }
+            
+            // Verificar que el número es válido
+            if (!isValidLuhn(cardNumber)) {
+                console.error("Error: Número generado inválido", cardNumber);
+                return generateValidCardNumber(type);
+            }
+            
+            return cardNumber;
+        }
+        
+        // Función para detectar el tipo de tarjeta basado en el número
+        function detectCardType(number) {
+            const numStr = number.toString();
+            
+            if (numStr.startsWith('4')) {
+                return 'VISA';
+            } else if (/^5[1-5]/.test(numStr)) {
+                return 'MasterCard';
+            } else if (/^3[47]/.test(numStr)) {
+                return 'American Express';
+            } else if (/^6(011|44|45|46|47|48|49)/.test(numStr)) {
+                return 'Discover';
+            } else {
+                return 'Desconocido';
+            }
+        }
+        
+        // Función para formatear el número de tarjeta
+        function formatCardNumber(number) {
+            const numStr = number.toString();
+            
+            // Formatear American Express (4-6-5)
+            if (numStr.startsWith('34') || numStr.startsWith('37')) {
+                return numStr.replace(/^(\d{4})(\d{6})(\d{5})$/, '$1 $2 $3');
+            } 
+            // Formatear otros tipos (4-4-4-4)
+            else {
+                return numStr.replace(/^(\d{4})(\d{4})(\d{4})(\d{4})$/, '$1 $2 $3 $4');
+            }
+        }
+        
+        // Función para generar los números de tarjeta
+        function generateCards() {
+            const cardType = document.getElementById('cardType').value;
+            const quantity = parseInt(document.getElementById('quantity').value, 10);
+            const resultsBody = document.getElementById('resultsBody');
+            
+            // Limpiar resultados anteriores
+            resultsBody.innerHTML = '';
+            
+            // Generar nuevos números
+            for (let i = 0; i < quantity; i++) {
+                const cardNumber = generateValidCardNumber(cardType);
+                const formattedNumber = formatCardNumber(cardNumber);
+                const detectedType = detectCardType(cardNumber);
+                const isValid = isValidLuhn(cardNumber);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formattedNumber}</td>
+                    <td>${detectedType}</td>
+                    <td>${isValid ? '✓ Válido' : '✗ Inválido'}</td>
+                    <td>
+                        <button class="copy-btn" data-number="${cardNumber}">Copiar</button>
+                    </td>
+                `;
+                resultsBody.appendChild(row);
+            }
+            
+            // Agregar eventos de copia
+            document.querySelectorAll('.copy-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const number = this.getAttribute('data-number');
+                    navigator.clipboard.writeText(number).then(() => {
+                        const originalText = this.textContent;
+                        this.textContent = 'Copiado!';
+                        setTimeout(() => {
+                            this.textContent = originalText;
+                        }, 1000);
+                    });
+                });
+            });
+        }
+        
+        // Función para exportar a CSV
+        function exportToCSV() {
+            const table = document.getElementById('resultsTable');
+            const rows = table.querySelectorAll('tr');
+            let csv = [];
+            
+            // Encabezado
+            csv.push(['Número de Tarjeta', 'Tipo', 'Válido'].join(','));
+            
+            // Filas de datos
+            rows.forEach((row, index) => {
+                if (index === 0) return; // Saltar el encabezado HTML
+                
+                const cols = row.querySelectorAll('td');
+                if (cols.length === 0) return;
+                
+                const cardNumber = cols[0].textContent.replace(/\s/g, '');
+                const cardType = cols[1].textContent;
+                const isValid = cols[2].textContent.includes('Válido') ? 'Válido' : 'Inválido';
+                
+                csv.push([cardNumber, cardType, isValid].join(','));
+            });
+            
+            // Descargar el archivo CSV
+            const csvContent = csv.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'tarjetas_credito_validas.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Agregar event listeners
+        document.getElementById('generateBtn').addEventListener('click', generateCards);
+        document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+        
+        // Generar algunos números al cargar la página
+        document.addEventListener('DOMContentLoaded', generateCards);
+    </script>
+</body>
+</html>
